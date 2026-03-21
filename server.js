@@ -10,7 +10,7 @@ app.use(express.json());
 app.post('/api/test-smm', async (req, res) => {
     try {
         // NEW: Grab 'provider' from the frontend request
-        const { link, service, quantity, provider } = req.body;
+        const { link, service, quantity, provider, runs, interval } = req.body;
         
         let smmUrl = "";
         let apiKey = "";
@@ -31,6 +31,11 @@ app.post('/api/test-smm', async (req, res) => {
         data.append("service", service);
         data.append("link", link);
         data.append("quantity", quantity);
+
+        // 2. ADD THESE CONDITIONAL CHECKS
+        // This guarantees your live app won't break. If runs/interval are missing, it skips this.
+        if (runs) data.append("runs", runs);
+        if (interval) data.append("interval", interval);
 
         const apiResponse = await fetch(smmUrl, {
             method: 'POST',
