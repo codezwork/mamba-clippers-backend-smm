@@ -56,7 +56,19 @@ app.post('/api/test-smm', async (req, res) => {
 
 app.get('/api/smm-balance', async (req, res) => {
     try {
-        // 1. Fetch SMM Raja Balance First
+        // 1. Fetch the Live USD to INR Exchange Rate
+        let inrRate = 83.50; // Fallback rate just in case the exchange API goes down
+        try {
+            const rateResponse = await fetch("https://open.er-api.com/v6/latest/USD");
+            const rateData = await rateResponse.json();
+            if (rateData && rateData.rates && rateData.rates.INR) {
+                inrRate = rateData.rates.INR;
+            }
+        } catch (rateError) {
+            console.error("Warning: Exchange rate API failed, using fallback.", rateError);
+        }
+
+        // 2. Fetch SMM Raja Balance
         const rajaData = new URLSearchParams();
         rajaData.append("key", process.env.SMM_API_KEY);
         rajaData.append("action", "balance");
@@ -68,9 +80,9 @@ app.get('/api/smm-balance', async (req, res) => {
         });
         const rajaResult = await rajaResponse.json();
 
-        // 2. Fetch SMM Panel One Balance Second
+        // 3. Fetch SMM Panel One Balance
         const panelOneData = new URLSearchParams();
-        panelOneData.append("key", process.env.SMM_PANEL_ONE_KEY); // Ensure this is in your Render Env Vars
+        panelOneData.append("key", process.env.SMM_PANEL_ONE_KEY); 
         panelOneData.append("action", "balance");
 
         const panelOneResponse = await fetch("https://smmpanelone.com/api/v2", {
@@ -80,10 +92,20 @@ app.get('/api/smm-balance', async (req, res) => {
         });
         const panelOneResult = await panelOneResponse.json();
 
-        // Send formatted JSON back to the frontend
+        // 4. Convert dynamically to INR
+        const rajaInr = rajaResult.balance 
+            ? (parseFloat(rajaResult.balance) * inrRate).toFixed(2) 
+            : "Err";
+            
+        const panelOneInr = panelOneResult.balance 
+            ? (parseFloat(panelOneResult.balance) * inrRate).toFixed(2) 
+            : "Err";
+
+        // 5. Send converted JSON back to the frontend
         res.json({
-            raja: rajaResult.balance ? parseFloat(rajaResult.balance).toFixed(2) : "Err",
-            panelOne: panelOneResult.balance ? parseFloat(panelOneResult.balance).toFixed(2) : "Err"
+            raja: rajaInr,
+            panelOne: panelOneInr,
+            liveRate: inrRate // Passing this just in case you want to log or display the current rate
         });
         
     } catch (error) {
