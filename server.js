@@ -54,6 +54,44 @@ app.post('/api/test-smm', async (req, res) => {
     }
 });
 
+app.get('/api/smm-balance', async (req, res) => {
+    try {
+        // 1. Fetch SMM Raja Balance First
+        const rajaData = new URLSearchParams();
+        rajaData.append("key", process.env.SMM_API_KEY);
+        rajaData.append("action", "balance");
+        
+        const rajaResponse = await fetch("https://www.smmraja.com/api/v3", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: rajaData
+        });
+        const rajaResult = await rajaResponse.json();
+
+        // 2. Fetch SMM Panel One Balance Second
+        const panelOneData = new URLSearchParams();
+        panelOneData.append("key", process.env.SMM_PANEL_ONE_KEY); // Ensure this is in your Render Env Vars
+        panelOneData.append("action", "balance");
+
+        const panelOneResponse = await fetch("https://smmpanelone.com/api/v2", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: panelOneData
+        });
+        const panelOneResult = await panelOneResponse.json();
+
+        // Send formatted JSON back to the frontend
+        res.json({
+            raja: rajaResult.balance ? parseFloat(rajaResult.balance).toFixed(2) : "Err",
+            panelOne: panelOneResult.balance ? parseFloat(panelOneResult.balance).toFixed(2) : "Err"
+        });
+        
+    } catch (error) {
+        console.error("Balance Fetch Error:", error);
+        res.status(500).json({ error: "Failed to fetch SMM balances" });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Backend server is running on port ${PORT}`);
 });
