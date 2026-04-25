@@ -20,9 +20,9 @@ app.post('/api/test-smm', async (req, res) => {
             smmUrl = "https://smmpanelone.com/api/v2";
             apiKey = process.env.SMM_PANEL_ONE_KEY; // Add this to Render Env Vars
         } else {
-            // Default to SMM Raja
-            smmUrl = "https://www.smmraja.com/api/v3";
-            apiKey = process.env.SMM_API_KEY; 
+            // Default to SMM Lite
+            smmUrl = "https://smmlite.com/api/v2";
+            apiKey = process.env.SMM_LITE_KEY; 
         }
         
         const data = new URLSearchParams();
@@ -68,17 +68,17 @@ app.get('/api/smm-balance', async (req, res) => {
             console.error("Warning: Exchange rate API failed, using fallback.", rateError);
         }
 
-        // 2. Fetch SMM Raja Balance
-        const rajaData = new URLSearchParams();
-        rajaData.append("key", process.env.SMM_API_KEY);
-        rajaData.append("action", "balance");
+        // 2. Fetch SMM Lite Balance
+        const liteData = new URLSearchParams();
+        liteData.append("key", process.env.SMM_LITE_KEY);
+        liteData.append("action", "balance");
         
-        const rajaResponse = await fetch("https://www.smmraja.com/api/v3", {
+        const liteResponse = await fetch("https://smmlite.com/api/v2", {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: rajaData
+            body: liteData
         });
-        const rajaResult = await rajaResponse.json();
+        const liteResult = await liteResponse.json();
 
         // 3. Fetch SMM Panel One Balance
         const panelOneData = new URLSearchParams();
@@ -93,8 +93,8 @@ app.get('/api/smm-balance', async (req, res) => {
         const panelOneResult = await panelOneResponse.json();
 
         // 4. Convert dynamically to INR
-        const rajaInr = rajaResult.balance 
-            ? (parseFloat(rajaResult.balance) * inrRate).toFixed(2) 
+        const liteInr = liteResult.balance 
+            ? (parseFloat(liteResult.balance) * inrRate).toFixed(2) 
             : "Err";
             
         const panelOneInr = panelOneResult.balance 
@@ -103,9 +103,9 @@ app.get('/api/smm-balance', async (req, res) => {
 
         // 5. Send converted JSON back to the frontend
         res.json({
-            raja: rajaInr,
+            lite: liteInr,
             panelOne: panelOneInr,
-            liveRate: inrRate // Passing this just in case you want to log or display the current rate
+            liveRate: inrRate
         });
         
     } catch (error) {
